@@ -8,6 +8,11 @@
     "default_popup": "index.html",
     "default_title": "Add Letterboxd sources"
   },
+  "content_scripts": [{
+    "all_frames": true, 
+    "matches": ["https://*.letterboxd.com/*"],
+    "js": ["Content.js"]
+  }],
   "permissions": [
     "activeTab",
     "tabs",
