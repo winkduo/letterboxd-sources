@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+  "name": "Letterboxd Sources",
+  "description": "Extra sources for letterboxd.com",
+  "version": "0.1",
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "index.html",
+    "default_title": "Add Letterboxd sources"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "history",
+    "management"
+  ],
+  "background": { "scripts": ["hot-reload.js"] }
+}
