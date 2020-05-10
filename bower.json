@@ -9,7 +9,10 @@
   "dependencies": {
     "purescript-prelude": "^4.1.0",
     "purescript-console": "^4.1.0",
-    "purescript-aff": "^5.0.2"
+    "purescript-aff": "^5.0.2",
+    "purescript-debug": "^4.0.0",
+    "purescript-web-dom": "^4.0.1",
+    "purescript-web-html": "^2.3.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",

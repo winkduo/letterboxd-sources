@@ -11,7 +11,7 @@
   "content_scripts": [{
     "all_frames": true, 
     "matches": ["https://*.letterboxd.com/*"],
-    "js": ["Content.js"]
+    "js": ["content.js"]
   }],
   "permissions": [
     "activeTab",
