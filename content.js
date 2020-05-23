@@ -4,12 +4,12 @@ chrome.runtime.onMessage.addListener(
               "from a content script:" + sender.tab.url :
               "from the extension");
   if (request.type == "addService") {
-    addService(request.serviceName);
+    addService(request.serviceName, request.url);
     sendResponse({farewell: "goodbye"});
   }
 });
 
-function addService(name) {
+function addService(name, url) {
   var v = document.createElement("p")
   v.classList.add("service")
   v.style = "display: block;"
@@ -24,7 +24,7 @@ function addService(name) {
 
   var a = document.createElement("a")
   a.classList.add("label")
-  a.href = "http://tafdi.org"
+  a.href = url
 
   span.appendChild(span2)
   a.appendChild(span)
