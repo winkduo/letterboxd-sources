@@ -17,7 +17,8 @@
     "purescript-argonaut-codecs": "^6.1.0",
     "purescript-validation": "^4.2.0",
     "purescript-argonaut-core": "^5.0.2",
-    "purescript-argonaut": "^6.0.0"
+    "purescript-argonaut": "^6.0.0",
+    "purescript-codec-argonaut": "^7.1.0"
   },
   "devDependencies": {
     "purescript-debug": "^4.0.0",

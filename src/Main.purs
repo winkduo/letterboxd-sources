@@ -1,12 +1,11 @@
 module Main where
 
-import Prelude
+import           Prelude
 
-import Letterboxd.Html (addServices)
-import Effect.Aff (launchAff_)
-import Effect.Class (liftEffect)
-import Effect (Effect)
+import           Letterboxd.Html                ( addServices )
+import           Effect.Aff                     ( launchAff_ )
+import           Effect                         ( Effect )
+import           Control.Monad.Except           ( runExceptT )
 
 main :: Effect Unit
-main = launchAff_ do
-  liftEffect addServices
+main = launchAff_ $ runExceptT addServices
