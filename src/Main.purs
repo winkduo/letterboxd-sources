@@ -1,11 +1,18 @@
 module Main where
 
-import           Prelude
+import Prelude
 
-import           Letterboxd.Html                ( addServices )
-import           Effect.Aff                     ( launchAff_ )
-import           Effect                         ( Effect )
-import           Control.Monad.Except           ( runExceptT )
+import Control.Monad.Except (runExceptT)
+import Data.Either
+import Effect (Effect)
+import Effect.Aff (launchAff_)
+import Effect.Class.Console (error)
+import Letterboxd.Html (addServices)
 
 main :: Effect Unit
-main = launchAff_ $ runExceptT addServices
+main =
+  launchAff_ $ do
+    result <- runExceptT addServices
+    case result of
+      Left err -> error $ show err
+      Right _ -> pure unit

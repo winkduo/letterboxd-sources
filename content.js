@@ -1,17 +1,27 @@
+const PUTIO_SERVICE_NODE_CLASS = "putio-extension-link";
+
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
   console.log(sender.tab ?
               "from a content script:" + sender.tab.url :
               "from the extension");
   if (request.type == "addService") {
-    addService(request.serviceName, request.url);
+    addService(request.serviceName, request.url, request.percentage);
     sendResponse({farewell: "goodbye"});
+  } else if (request.type == "getMovieName") {
+    movieName = getMovieName();
+    sendResponse({name: movieName});
+  } else if (request.type == "clearServices") {
+    clearServices();
+    sendResponse();
   }
 });
 
-function addService(name, url) {
+function addService(name, url, percentage) {
+  console.log("Adding service. Name: " + name + ", url: " + url);
   var v = document.createElement("p")
   v.classList.add("service")
+  v.classList.add(PUTIO_SERVICE_NODE_CLASS)
   v.style = "display: block;"
 
   var span = document.createElement("span")
@@ -26,9 +36,40 @@ function addService(name, url) {
   a.classList.add("label")
   a.href = url
 
+  var label = document.createElement("span")
+  label.classList.add("options")
+
+  var labelA = document.createElement("a")
+  labelA.classList.add("link")
+  labelA.appendChild(document.createTextNode(percentage + "%"))
+  label.appendChild(labelA)
+
   span.appendChild(span2)
   a.appendChild(span)
   v.appendChild(a)
+  v.appendChild(label)
 
   document.getElementsByClassName("services")[0].appendChild(v)
+}
+
+function getMovieName() {
+  root = document.querySelector('section#featured-film-header > h1');
+  iter = document.createNodeIterator(root, NodeFilter.SHOW_TEXT);
+  while(textnode = iter.nextNode()) {
+    console.log("Searching...")
+    console.log(textnode)
+    if(textnode !== undefined && textnode.textContent !== undefined) {
+      return textnode.textContent;
+    }
+  }
+}
+
+function clearServices() {
+  serviceNodes = document.getElementsByClassName('service ' + PUTIO_SERVICE_NODE_CLASS);
+  console.log(serviceNodes);
+
+
+  for(i = serviceNodes.length - 1; i >= 0; i--) {
+    serviceNodes[i].remove();
+  }
 }
