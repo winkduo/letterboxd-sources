@@ -5,9 +5,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Chromux</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- <link rel="stylesheet" type="text/css" media="screen" href="main.css" /> -->
+    <link rel="stylesheet" type="text/css" media="screen" href="./bower_components/bootstrap/dist/css/bootstrap.min.css" />
 </head>
 <body>
+  <script id="main" type="x-tmpl-mustache">
+    {{#services}}
+      Wow Service {{service.id}} {{service.name}}
+    {{/services}}
+  </script>
+  <div class="container" id="container">
+  </div>
 </body>
 <script src="./dist/index_bundle.js"></script>
 </html>
