@@ -3,15 +3,66 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Chromux</title>
+    <title>Letterboxd & Put.IO Chrome</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" media="screen" href="./bower_components/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="./dist/style.css" />
 </head>
 <body>
   <script id="main" type="x-tmpl-mustache">
-    {{#services}}
-      Wow Service {{service.id}} {{service.name}}
-    {{/services}}
+    <h1>{{movie}}</h1>
+    <hr/>
+    <div class="col-12">
+      <ul class="list-group movie-channels">
+      {{#movie_state.no_channels_yet}}
+        There are no channels found for this movie yet...
+      {{/movie_state.no_channels_yet}}
+      {{#movie_state.updating_movie_channels}}
+        Updating channels for the movie...
+      {{/movie_state.updating_movie_channels}}
+      {{#movie_state.found_channels}}
+        {{#found_movie_channel}}
+          <li class="list-group-item movie-channel">
+            <div class="row">
+              <div class="col-9">
+                <span class="movie-channel-title">
+                  {{title}}
+                </span>
+              </div>
+              <div class="col-3">
+                <button type="button" href="{{id}}" class="btn btn-success movie-channel-download">
+                  <svg fill="white" style="display: inline-block; vertical-align: text-bottom;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16"><path fill-rule="evenodd" d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"></path></svg>
+                  <b>Download</b>
+                </button>
+              </div>
+            </div>
+          </li>
+        {{/found_movie_channel}}
+        {{#requesting_download}}
+          Requesting Download...
+        {{/requesting_download}}
+        {{#watching_download_progress}}
+          Watching Download Progress...
+        {{/watching_download_progress}}
+        {{#downloading_movie}}
+          Downloading Movie...
+          {{percent_done}}
+        {{/downloading_movie}}
+        {{#finding_download_link}}
+          Finding Download Link...
+        {{/finding_download_link}}
+        {{#downloaded_movie}}
+          Downloaded Movie. <a href="{{url}}">Link</a>
+        {{/downloaded_movie}}
+        {{#cannot_download_movie}}
+          Cannot Download Movie: {{cannot_download_movie}}
+        {{/cannot_download_movie}}
+      {{/movie_state.found_channels}}
+      {{^movie_state.found_channels}}
+        No channels could be found for this movie.
+      {{/movie_state.found_channels}}
+      </ul>
+    </div>
   </script>
   <div class="container" id="container">
   </div>

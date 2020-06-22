@@ -1,0 +1,18 @@
+body { min-width: 800px; }
+
+ul.movie-channels li.movie-channel span {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+ul.movie-channels {
+  padding: 0;
+}
+
+ul.movie-channels li.movie-channel {
+  list-style: none;
+  display: block;
+}
