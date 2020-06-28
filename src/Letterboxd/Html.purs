@@ -25,14 +25,15 @@ import Data.Time.Duration (Milliseconds (..))
 import Data.Identity
 import Data.Generic.Rep (class Generic)
 import Data.Nullable
+import Data.Tuple
 
 foreign import _addService :: String -> String -> String -> Effect Unit
 
-foreign import _getMovieName :: EffectFnAff String
+foreign import _getMovieNameAndYear :: EffectFnAff (Tuple String String)
 
 foreign import _clearServices :: EffectFnAff Unit
 
-foreign import _renderEverything :: String -> MovieStateHtml -> EffectFn1 String Unit -> Effect Unit
+foreign import _renderEverything :: String -> MovieStateHtml -> EffectFn1 String Unit -> EffectFn1 String Unit -> Effect Unit
 
 fetch :: M.Fetch
 fetch = M.fetch nodeFetch
@@ -88,8 +89,8 @@ type TransferWithUrl = TransferWithUrl' Maybe
 type FullTransferWithUrl = TransferWithUrl' Identity
 
 baseUrl :: String
--- baseUrl = "http://localhost:8080"
-baseUrl = "http://68.183.36.98:8081"
+baseUrl = "http://localhost:8081"
+-- baseUrl = "http://68.183.36.98:8081"
 
 type MovieChannel = {
   id :: String
@@ -102,19 +103,15 @@ genericJsonEncoding =   { tagKey: "tag" , valuesKey: "contents" , unwrapSingleAr
 
 data MovieChannelState
   = FoundMovieChannel MovieChannel
-  | RequestingDownload
-  | WatchingDownloadProgress
-  | DownloadingMovie Transfer
-  | FindingDownloadLink Transfer
+  | RequestingDownload MovieChannel
+  | DownloadingMovie MovieChannel Transfer
   | DownloadedMovie String Transfer
   | CannotDownloadMovie String
 
 type MovieChannelStateHtml =
   { found_movie_channel :: Nullable MovieChannel
-  , requesting_download :: Boolean
-  , watching_download_progress :: Boolean
-  , downloading_movie :: Nullable HtmlTransfer
-  , finding_download_link :: Nullable HtmlTransfer
+  , requesting_download :: Nullable MovieChannel
+  , downloading_movie :: Nullable { channel :: MovieChannel, transfer :: HtmlTransfer }
   , downloaded_movie :: Nullable {
       url :: String
     , transfer :: HtmlTransfer }
@@ -138,10 +135,10 @@ type MovieStateHtml =
 derive instance genericMovieState :: Generic MovieState _
 instance jsonMovieState :: JSON.DecodeJson MovieState where decodeJson = JSON.genericDecodeJsonWith genericJsonEncoding
 
-startTransfer :: String -> ExceptT Exc.Error Aff.Aff (Array TransferWithUrl)
-startTransfer name = do
+startTransfer :: Tuple String String -> ExceptT Exc.Error Aff.Aff (Array TransferWithUrl)
+startTransfer (Tuple name year) = do
   log "requesting..."
-  response <- ExceptT $ Aff.attempt (fetch (M.URL (baseUrl <> "/find_movie")) { method: M.postMethod, body: "{\"name\": \"" <> name <> "\"}", headers: M.makeHeaders {"Content-Type": "application/json"} })
+  response <- ExceptT $ Aff.attempt (fetch (M.URL (baseUrl <> "/find_movie")) { method: M.postMethod, body: "{\"name\": \"" <> name <> "\", \"year\": \"" <> year <> "\"}", headers: M.makeHeaders {"Content-Type": "application/json"} })
   transfersJson <- withExceptT Exc.error $ ExceptT $ JSON.jsonParser <$> M.text response
   withExceptT Exc.error $ except $ JSON.decodeJson transfersJson
 
@@ -151,15 +148,15 @@ sendRequest fetchReq = do
   respJson <- withExceptT Exc.error $ ExceptT $ JSON.jsonParser <$> M.text response
   withExceptT Exc.error $ except $ JSON.decodeJson respJson
 
-getMovieState :: String -> ExceptT Exc.Error Aff.Aff MovieState
-getMovieState name = do
-  sendRequest $ fetch (M.URL (baseUrl <> "/movie_state?name=" <> name)) { method: M.getMethod, headers: M.makeHeaders {"Content-Type": "application/json"} }
+getMovieState :: Tuple String String -> ExceptT Exc.Error Aff.Aff MovieState
+getMovieState (Tuple name year) = do
+  sendRequest $ fetch (M.URL (baseUrl <> "/movie_state?name=" <> name <> "&year=" <> year)) { method: M.getMethod, headers: M.makeHeaders {"Content-Type": "application/json"} }
 
 addServices :: ExceptT Exc.Error Aff.Aff (Array TransferWithUrl)
 addServices = do
   liftAff $ fromEffectFnAff _clearServices
-  movieName <- liftAff $ fromEffectFnAff _getMovieName
-  transfers_with_urls <- startTransfer movieName
+  movieNameAndYear <- liftAff $ fromEffectFnAff _getMovieNameAndYear
+  transfers_with_urls <- startTransfer movieNameAndYear
   log $ show transfers_with_urls
   for_ transfers_with_urls $ \(transfer_with_url) ->
     liftEffect $ _addService transfer_with_url.transfer.name (fromMaybe "#" transfer_with_url.url) (show (fromMaybe 0 transfer_with_url.transfer.percent_done))
@@ -181,20 +178,18 @@ toFullTransferWithUrl transfer_with_url =
 defaultChannelStateHtml :: MovieChannelStateHtml
 defaultChannelStateHtml = {
     found_movie_channel: toNullable Nothing
-  , requesting_download: false
-  , watching_download_progress: false
+  , requesting_download: toNullable Nothing
   , downloading_movie: toNullable Nothing
-  , finding_download_link: toNullable Nothing
   , downloaded_movie: toNullable Nothing
   , cannot_download_movie: toNullable Nothing
 }
 
 translateChannelStateToHtml :: MovieChannelState -> MovieChannelStateHtml
 translateChannelStateToHtml (FoundMovieChannel channel) = defaultChannelStateHtml { found_movie_channel = toNullable (Just channel) }
-translateChannelStateToHtml RequestingDownload = defaultChannelStateHtml { requesting_download = true }
-translateChannelStateToHtml WatchingDownloadProgress = defaultChannelStateHtml { watching_download_progress = true }
-translateChannelStateToHtml (DownloadingMovie transfer) = defaultChannelStateHtml { downloading_movie = toNullable (Just (ffmapTransfer toNullable transfer)) }
-translateChannelStateToHtml (FindingDownloadLink transfer) = defaultChannelStateHtml { finding_download_link = toNullable (Just (ffmapTransfer toNullable transfer)) }
+translateChannelStateToHtml (RequestingDownload channel) = defaultChannelStateHtml { requesting_download = toNullable (Just channel) }
+translateChannelStateToHtml (DownloadingMovie channel transfer) = defaultChannelStateHtml {
+  downloading_movie = toNullable (Just { channel: channel, transfer: ffmapTransfer toNullable transfer })
+}
 translateChannelStateToHtml (DownloadedMovie url transfer) = defaultChannelStateHtml { downloaded_movie = toNullable (Just { url: url, transfer: ffmapTransfer toNullable transfer }) }
 translateChannelStateToHtml (CannotDownloadMovie err) = defaultChannelStateHtml { cannot_download_movie = toNullable (Just err) }
 
@@ -211,26 +206,34 @@ translateMovieStateToHtml MSSNoChannelsYet = defaultMovieStateHtml { no_channels
 translateMovieStateToHtml MSSUpdatingMovieChannels = defaultMovieStateHtml { updating_movie_channels = true }
 translateMovieStateToHtml (MSSFoundChannels channels) = defaultMovieStateHtml { found_channels = toNullable (Just (map translateChannelStateToHtml channels)) }
 
-downloadMovieThroughChannel :: String -> String -> Effect Unit
-downloadMovieThroughChannel movieName channelId = do
+downloadMovieThroughChannel :: String -> String -> String -> Effect Unit
+downloadMovieThroughChannel movieName movieYear channelId = do
   Aff.launchAff_ $ do
-    result <- runExceptT $ sendRequest $ fetch (M.URL (baseUrl <> "/download_movie?name=" <> movieName <> "&channel_id=" <> channelId)) { method: M.postMethod, headers: M.makeHeaders {"Content-Type": "application/json"} }
+    result <- runExceptT $ sendRequest $ fetch (M.URL (baseUrl <> "/download_movie?name=" <> movieName <> "&year=" <> movieYear <> "&channel_id=" <> channelId)) { method: M.postMethod, headers: M.makeHeaders {"Content-Type": "application/json"} }
     case result of
          Left err -> log $ show err
          Right (_ :: Unit) -> pure unit
 
-downloadButtonClicked :: String -> EffectFn1 String Unit
-downloadButtonClicked movieName = mkEffectFn1 $ \s -> do
-  downloadMovieThroughChannel movieName s
+downloadButtonClicked :: String -> String -> EffectFn1 String Unit
+downloadButtonClicked movieName movieYear = mkEffectFn1 $ \s -> do
+  downloadMovieThroughChannel movieName movieYear s
+
+cancelDownloadClicked :: String -> String -> EffectFn1 String Unit
+cancelDownloadClicked movieName movieYear = mkEffectFn1 $ \channelId -> do
+  Aff.launchAff_ $ do
+    result <- runExceptT $ sendRequest $ fetch (M.URL (baseUrl <> "/cancel_download?name=" <> movieName <> "&year=" <> movieYear <> "&channel_id=" <> channelId)) { method: M.postMethod, headers: M.makeHeaders {"Content-Type": "application/json"} }
+    case result of
+         Left err -> log $ show err
+         Right (_ :: Unit) -> pure unit
 
 renderEverything :: Aff.Aff Unit
 renderEverything = do
-  movieName <- fromEffectFnAff _getMovieName
-  result <- runExceptT $ getMovieState movieName
+  Tuple movieName movieYear <- fromEffectFnAff _getMovieNameAndYear
+  result <- runExceptT $ getMovieState (Tuple movieName movieYear) 
   
   case result of
        Left err -> log $ show err
        Right movie_state -> do
-         liftEffect $ _renderEverything movieName (translateMovieStateToHtml movie_state) (downloadButtonClicked movieName)
-         Aff.delay (Milliseconds 100.0)
+         liftEffect $ _renderEverything movieName (translateMovieStateToHtml movie_state) (downloadButtonClicked movieName movieYear) (cancelDownloadClicked movieName movieYear)
+         Aff.delay (Milliseconds 1000.0)
          renderEverything

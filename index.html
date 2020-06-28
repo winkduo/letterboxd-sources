@@ -41,16 +41,24 @@
         {{#requesting_download}}
           Requesting Download...
         {{/requesting_download}}
-        {{#watching_download_progress}}
-          Watching Download Progress...
-        {{/watching_download_progress}}
         {{#downloading_movie}}
-          Downloading Movie...
-          {{percent_done}}
+          <li class="list-group-item movie-channel">
+            <div class="row">
+              <div class="col-9">
+                <span class="movie-channel-title">
+                  Downloading {{channel.title}}
+                  <br />
+                  Progress: {{transfer.percent_done}}%
+                </span>
+              </div>
+              <div class="col-3">
+                <button type="button" href="{{channel.id}}" class="btn btn-success movie-cancel-download">
+                  <b>Cancel Download</b>
+                </button>
+              </div>
+            </div>
+          </li>
         {{/downloading_movie}}
-        {{#finding_download_link}}
-          Finding Download Link...
-        {{/finding_download_link}}
         {{#downloaded_movie}}
           Downloaded Movie. <a href="{{url}}">Link</a>
         {{/downloaded_movie}}

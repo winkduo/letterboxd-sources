@@ -8,9 +8,10 @@ chrome.runtime.onMessage.addListener(
   if (request.type == "addService") {
     addService(request.serviceName, request.url, request.percentage);
     sendResponse({farewell: "goodbye"});
-  } else if (request.type == "getMovieName") {
+  } else if (request.type == "getMovieNameAndYear") {
     movieName = getMovieName();
-    sendResponse({name: movieName});
+    movieYear = getMovieYear();
+    sendResponse({name: movieName, year: movieYear});
   } else if (request.type == "clearServices") {
     clearServices();
     sendResponse();
@@ -52,16 +53,22 @@ function addService(name, url, percentage) {
   document.getElementsByClassName("services")[0].appendChild(v)
 }
 
-function getMovieName() {
-  root = document.querySelector('section#featured-film-header > h1');
+function getText(selector) {
+  root = document.querySelector(selector);
   iter = document.createNodeIterator(root, NodeFilter.SHOW_TEXT);
   while(textnode = iter.nextNode()) {
-    console.log("Searching...")
-    console.log(textnode)
     if(textnode !== undefined && textnode.textContent !== undefined) {
       return textnode.textContent;
     }
   }
+}
+
+function getMovieYear() {
+  return getText('section#featured-film-header > p > small.number > a')
+}
+
+function getMovieName() {
+  return getText('section#featured-film-header > h1')
 }
 
 function clearServices() {
